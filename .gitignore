@@ -1,0 +1,19 @@
+# Raw source files — not committed (see SOURCES.md); the derived
+# data/cleaned_housing_data.csv IS committed.
+data/raw/
+
+# Runtime outputs (the committed chart lives in figures/)
+results/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
