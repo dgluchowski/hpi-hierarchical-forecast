@@ -14,6 +14,10 @@ this script does; it produces a bounded, sensible decline under stress.
 
 Prints the projected cumulative % change per quarter (with a 95% band) and saves
 results/adverse_forecast.png.
+
+Reads ``data/cleaned_housing_data.csv``. That file is not in the repository;
+build it with ``python preprocessing.py`` before running this script (see the
+README and SOURCES.md). There is no notebook for this forecast.
 """
 
 import os

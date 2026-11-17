@@ -1,6 +1,6 @@
-# Raw source files — not committed (see SOURCES.md); the derived
-# data/cleaned_housing_data.csv IS committed.
+# Raw sources and the derived panel are not committed (see SOURCES.md).
 data/raw/
+data/cleaned_housing_data.csv
 
 # Runtime outputs (the committed chart lives in figures/)
 results/
