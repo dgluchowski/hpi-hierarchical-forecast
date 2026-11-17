@@ -12,6 +12,10 @@ macro covariates alone explain about 0.47. Both numbers are printed below so the
 result is not oversold. For the forward-looking adverse-scenario projection see
 forecast.py, which models growth (a stationary target) because recursively
 forecasting the level model is numerically unstable.
+
+Reads ``data/cleaned_housing_data.csv``. That file is not in the repository;
+build it with ``python preprocessing.py`` before running this script (see the
+README and SOURCES.md). There is no notebook for this model.
 """
 
 import os

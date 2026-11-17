@@ -1,14 +1,21 @@
 """Build the cleaned quarterly panel from the raw source files.
 
-Merges seven public/economic sources into one quarterly, state-level dataset:
-regional FHFA HPI plus national mortgage rates, unemployment, home sales,
-inventory, and negative-equity share. Produces ``data/cleaned_housing_data.csv``
-(already included in this repo).
+Merges regional FHFA HPI with national mortgage rates, unemployment, home
+sales, inventory, and negative-equity share into one quarterly, state-level
+dataset. Writes ``data/cleaned_housing_data.csv``. That file is not committed.
+Publishers, terms, and download pages are in SOURCES.md; the derived panel is
+not covered by the MIT license where it contains third-party series.
 
-The raw source files are **not** committed (see SOURCES.md for links). To
-regenerate from scratch, download them into ``data/raw/`` and run:
+The raw files are not committed. Download them into ``data/raw/`` under these
+names, then run ``python preprocessing.py``:
 
-    python preprocessing.py
+- ``hpi_master.csv``
+- ``Freddie Mac Primary Mortgage Market Survey (PMMS).csv`` (columns ``Week``, ``FRM``)
+- ``HSN1F.csv`` (columns ``observation_date``, ``HSN1F``)
+- ``UNRATE.csv`` (columns ``observation_date``, ``UNRATE``)
+- ``ACTLISCOUUS.csv`` (columns ``observation_date``, ``ACTLISCOUUS``)
+- ``CSUSHPINSA.csv`` (columns ``observation_date``, ``CSUSHPINSA``)
+- ``NegativeEquity_2017Q1_Public.csv`` (``RegionType``, ``RegionName``, quarter columns)
 """
 
 import os
@@ -91,6 +98,7 @@ def main():
     df["lag_hpi"] = df.groupby("region")["hpi"].shift(1)
     df["hpi_change"] = df.groupby("region")["hpi"].pct_change()
 
+    os.makedirs(os.path.dirname(OUT), exist_ok=True)
     df.to_csv(OUT, index=False)
     print(f"Wrote {OUT}: {len(df):,} rows, {df['region'].nunique()} regions")
 

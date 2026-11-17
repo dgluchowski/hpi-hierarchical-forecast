@@ -14,10 +14,43 @@ of how prices would move under an adverse economic scenario.
 
 Quarterly panel combining regional **FHFA HPI** with national **mortgage rates**
 (Freddie Mac PMMS), **unemployment**, **home sales**, **listing inventory**, and
-**negative-equity share**. 51 regions (50 states + DC), 2000–2025. Sources are
-listed in [`SOURCES.md`](SOURCES.md). The derived, analysis-ready panel
-(`data/cleaned_housing_data.csv`) is included; the large raw files are not — see
-[`preprocessing.py`](preprocessing.py) to rebuild them.
+**negative-equity share**. 51 regions (50 states + DC), from 2000 onward (the
+write-up uses a panel through 2025). Publishers and terms are in
+[`SOURCES.md`](SOURCES.md).
+
+`data/cleaned_housing_data.csv` is gitignored, together with the raw downloads
+in `data/raw/`. The panel mixes public series with third-party Case-Shiller,
+Realtor.com inventory, and Zillow negative-equity data. `model.py` and
+`forecast.py` read that CSV, so rebuild it before running them. This
+repository has no notebooks. `tests/test_panel.py` builds a small synthetic
+panel, and skips the check of a rebuilt CSV when that file is absent.
+
+### Rebuild `data/cleaned_housing_data.csv`
+
+`preprocessing.py` is the only builder. It reads seven files from `data/raw/`
+by these exact names. Create that directory, download each source from the
+page in the table, and save it under the name in the first column.
+
+```bash
+mkdir -p data/raw
+# save the seven files listed below into data/raw/
+python preprocessing.py   # writes data/cleaned_housing_data.csv
+```
+
+| Save as `data/raw/…` | What `preprocessing.py` reads | Download |
+|---|---|---|
+| `hpi_master.csv` | FHFA master file. Keeps `hpi_type == "traditional"`, `hpi_flavor == "purchase-only"`, `frequency == "quarterly"`, `level == "State"`. Uses `yr`, `period`, `place_name` (region), and `index_nsa` (HPI). | https://www.fhfa.gov/data/hpi/datasets |
+| `Freddie Mac Primary Mortgage Market Survey (PMMS).csv` | CSV with a header row and columns `Week` and `FRM` (30-year rate). Loaded with `pandas.read_csv`. | https://www.freddiemac.com/pmms |
+| `HSN1F.csv` | Census new one-family house sales. Columns `observation_date` and `HSN1F`. | https://fred.stlouisfed.org/series/HSN1F |
+| `UNRATE.csv` | BLS unemployment rate. Columns `observation_date` and `UNRATE`. | https://fred.stlouisfed.org/series/UNRATE |
+| `ACTLISCOUUS.csv` | Realtor.com active listing count. Columns `observation_date` and `ACTLISCOUUS`. | https://fred.stlouisfed.org/series/ACTLISCOUUS |
+| `CSUSHPINSA.csv` | Case-Shiller national HPI (S&P Cotality). Columns `observation_date` and `CSUSHPINSA`. | https://fred.stlouisfed.org/series/CSUSHPINSA |
+| `NegativeEquity_2017Q1_Public.csv` | Zillow negative-equity file from the Kaggle dataset. Keeps `RegionType == "State"`. Quarter columns must contain `Q` and parse as `YYYYQn` (`RegionName` is the state; year is the first four characters, quarter number starts at index 5). | https://www.kaggle.com/datasets/thedevastator/negative-equity-trends-in-us-housing-markets-201 |
+
+The script keeps dates on or after 2000-01-01, averages the national series to
+quarter-end, left-joins them and the state negative-equity share onto state
+HPI, forward- and back-fills gaps, clips each numeric series to its 1st–99th
+percentile, and adds `log_hpi`, `lag_hpi`, and `hpi_change`.
 
 ## Part 1 — Hierarchical model of price levels (`model.py`)
 
@@ -65,9 +98,13 @@ decline rather than a runaway path.
 
 ```bash
 pip install -r requirements.txt
-python model.py       # hierarchical level model: coefficients + R²
-python forecast.py    # adverse-scenario projection + figures/… chart
+python preprocessing.py   # rebuild data/cleaned_housing_data.csv (see Data)
+python model.py           # hierarchical level model: coefficients + R²
+python forecast.py        # adverse-scenario projection + chart
 ```
+
+`model.py` and `forecast.py` read the rebuilt `data/cleaned_housing_data.csv`.
+This repository has no notebooks.
 
 ## Methodology notes & limitations
 - **"Bayesian" = normal approximation.** Coefficient uncertainty comes from the
@@ -86,11 +123,12 @@ python forecast.py    # adverse-scenario projection + figures/… chart
 
 ```
 hpi-hierarchical-forecast/
-├── preprocessing.py     # build the quarterly panel from raw sources (raw data not committed)
+├── preprocessing.py     # build the quarterly panel from raw sources
 ├── model.py             # hierarchical (mixed-effects) level model
 ├── forecast.py          # adverse-scenario growth forecast + chart
-├── data/
-│   └── cleaned_housing_data.csv   # derived, analysis-ready panel
+├── data/raw/            # downloaded sources (gitignored; not in the repo)
+├── data/cleaned_housing_data.csv   # written by preprocessing.py (gitignored)
+├── tests/test_panel.py  # synthetic panel; skips when the rebuilt CSV is absent
 ├── figures/adverse_forecast.png
 ├── SOURCES.md
 ├── requirements.txt
@@ -98,5 +136,4 @@ hpi-hierarchical-forecast/
 ```
 
 ## License
-[MIT](LICENSE). Data belongs to its original publishers (FHFA, Freddie Mac, FRED,
-and the cited Kaggle datasets); see SOURCES.md.
+The code is [MIT](LICENSE). FHFA HPI (US government work; Source: Federal Housing Finance Agency, FHFA HPI®) and Census/BLS series are public. Freddie Mac PMMS is used with attribution (© Freddie Mac). Case-Shiller (S&P Cotality), Realtor.com inventory, and Zillow negative-equity data are third-party and remain under their owners' terms; they are not redistributed here and are not covered by the MIT license. Zillow data © Zillow Group, via Kaggle. See [SOURCES.md](SOURCES.md).
